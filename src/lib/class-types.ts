@@ -27,11 +27,9 @@ export function classTypeLabel(type: string): string {
 }
 
 export function classTypeAllowsTopic(type: string): boolean {
-  return (
-    CLASS_TYPES.find((t) => t.value === type)?.topic ??
-    type === "theoretical" ||
-    type === "practical"
-  );
+  const found = CLASS_TYPES.find((t) => t.value === type);
+  if (found) return found.topic;
+  return type === "theoretical" || type === "practical";
 }
 
 export function classTypeLimit(type: string): number | null {
