@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTeacherIdFromSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { splitNameAndMatricula } from "@/lib/parse-students";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -24,22 +25,38 @@ export async function POST(request: Request, { params }: Params) {
   if (Array.isArray(body.students)) {
     let created = 0;
     for (const item of body.students) {
-      const studentName = String(item.studentName ?? "").trim();
+      const rawName = String(item.studentName ?? "").trim();
       const studentDni = String(item.studentDni ?? "").replace(/\D/g, "");
-      if (!studentName || studentDni.length < 4) continue;
+      const split = splitNameAndMatricula(
+        rawName,
+        item.matricula != null ? String(item.matricula) : null,
+      );
+      if (!split.studentName || studentDni.length < 4) continue;
       try {
         await prisma.enrollment.create({
-          data: { courseId, studentName, studentDni },
+          data: {
+            courseId,
+            studentName: split.studentName,
+            studentDni,
+            matricula: split.matricula,
+          },
         });
         created += 1;
       } catch {
-        // skip duplicates
+        // update existing with matricula if duplicate DNI
+        await prisma.enrollment.updateMany({
+          where: { courseId, studentDni },
+          data: {
+            studentName: split.studentName,
+            matricula: split.matricula,
+          },
+        });
       }
     }
     return NextResponse.json({ created });
   }
 
-  // Bulk paste: "Apellido Nombre;DNI" per line OR single student
+  // Bulk paste
   if (typeof body.bulk === "string" && body.bulk.trim()) {
     const { parseStudentListText } = await import("@/lib/parse-students");
     const parsed = parseStudentListText(String(body.bulk));
@@ -51,20 +68,52 @@ export async function POST(request: Request, { params }: Params) {
             courseId,
             studentName: student.studentName,
             studentDni: student.studentDni,
+            matricula: student.matricula ?? null,
           },
         });
         created += 1;
       } catch {
-        // skip duplicates
+        await prisma.enrollment.updateMany({
+          where: { courseId, studentDni: student.studentDni },
+          data: {
+            studentName: student.studentName,
+            matricula: student.matricula ?? null,
+          },
+        });
       }
     }
     return NextResponse.json({ created });
   }
 
+  // Fix names that already have matricula glued on
+  if (body.action === "fix_matriculas") {
+    const students = await prisma.enrollment.findMany({ where: { courseId } });
+    let fixed = 0;
+    for (const s of students) {
+      const split = splitNameAndMatricula(s.studentName, s.matricula);
+      if (
+        split.studentName !== s.studentName ||
+        (split.matricula && split.matricula !== s.matricula)
+      ) {
+        await prisma.enrollment.update({
+          where: { id: s.id },
+          data: {
+            studentName: split.studentName,
+            matricula: split.matricula,
+          },
+        });
+        fixed += 1;
+      }
+    }
+    return NextResponse.json({ fixed });
+  }
+
   const studentName = String(body.studentName ?? "").trim();
   const studentDni = String(body.studentDni ?? "").replace(/\D/g, "");
+  const matriculaRaw = String(body.matricula ?? "").replace(/\D/g, "");
+  const split = splitNameAndMatricula(studentName, matriculaRaw || null);
 
-  if (!studentName || !studentDni) {
+  if (!split.studentName || !studentDni) {
     return NextResponse.json(
       { error: "Nombre y DNI/legajo son obligatorios." },
       { status: 400 },
@@ -73,7 +122,12 @@ export async function POST(request: Request, { params }: Params) {
 
   try {
     const student = await prisma.enrollment.create({
-      data: { courseId, studentName, studentDni },
+      data: {
+        courseId,
+        studentName: split.studentName,
+        studentDni,
+        matricula: split.matricula,
+      },
     });
     return NextResponse.json({ student });
   } catch {

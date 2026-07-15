@@ -46,16 +46,16 @@ async function main() {
   });
 
   const students = [
-    ["Gómez, Ana", "40111222"],
-    ["Ruiz, Luis", "40222333"],
-    ["Pérez, María", "40333444"],
-    ["López, Juan", "40444555"],
-    ["Fernández, Sofía", "40555666"],
+    ["Gómez, Ana", "40111222", "1013"],
+    ["Ruiz, Luis", "40222333", "1060"],
+    ["Pérez, María", "40333444", "1107"],
+    ["López, Juan", "40444555", "1154"],
+    ["Fernández, Sofía", "40555666", "1201"],
   ];
 
-  for (const [studentName, studentDni] of students) {
+  for (const [studentName, studentDni, matricula] of students) {
     await prisma.enrollment.create({
-      data: { courseId: course.id, studentName, studentDni },
+      data: { courseId: course.id, studentName, studentDni, matricula },
     });
   }
 

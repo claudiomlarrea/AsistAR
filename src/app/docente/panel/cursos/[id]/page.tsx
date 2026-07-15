@@ -13,6 +13,7 @@ import {
 import { AddStudentsForm } from "./add-students-form";
 import { CalendarForm } from "./calendar-form";
 import { SessionActions } from "./session-actions";
+import { RosterTable } from "./roster-table";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -121,29 +122,18 @@ export default async function CoursePage({ params }: Props) {
         <Card title={`Padrón (${course.students.length})`}>
           {course.students.length === 0 ? (
             <p className="text-sm text-slate-600">
-              Cargá alumnos con nombre y DNI/legajo (uno por línea).
+              Cargá alumnos con nombre, DNI y matrícula universitaria.
             </p>
           ) : (
-            <div className="max-h-80 overflow-auto rounded-xl border border-slate-100">
-              <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2">Nombre</th>
-                    <th className="px-3 py-2">DNI / Legajo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {course.students.map((s) => (
-                    <tr key={s.id} className="border-t border-slate-100">
-                      <td className="px-3 py-2">{s.studentName}</td>
-                      <td className="px-3 py-2 font-mono text-xs">
-                        {s.studentDni}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <RosterTable
+              courseId={course.id}
+              students={course.students.map((s) => ({
+                id: s.id,
+                studentName: s.studentName,
+                studentDni: s.studentDni,
+                matricula: s.matricula,
+              }))}
+            />
           )}
         </Card>
       </main>

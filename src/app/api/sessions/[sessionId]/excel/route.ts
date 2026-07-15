@@ -42,7 +42,8 @@ export async function GET(_request: Request, { params }: Params) {
   const sheet = workbook.addWorksheet("Asistencia");
 
   sheet.columns = [
-    { header: "DNI / Legajo", key: "dni", width: 16 },
+    { header: "DNI", key: "dni", width: 14 },
+    { header: "Matrícula", key: "matricula", width: 12 },
     { header: "Apellido y nombre", key: "name", width: 32 },
     { header: "Estado", key: "status", width: 12 },
     { header: "Hora de ingreso", key: "time", width: 22 },
@@ -54,6 +55,7 @@ export async function GET(_request: Request, { params }: Params) {
     const record = presentByDni.get(student.studentDni);
     sheet.addRow({
       dni: student.studentDni,
+      matricula: student.matricula ?? "",
       name: student.studentName,
       status: record
         ? record.status === "late"

@@ -16,6 +16,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
   const [bulk, setBulk] = useState("");
   const [studentName, setStudentName] = useState("");
   const [studentDni, setStudentDni] = useState("");
+  const [matricula, setMatricula] = useState("");
   const [preview, setPreview] = useState<ParsedStudent[]>([]);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +32,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       const res = await fetch(`/api/courses/${courseId}/students`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentName, studentDni }),
+        body: JSON.stringify({ studentName, studentDni, matricula }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -40,6 +41,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       }
       setStudentName("");
       setStudentDni("");
+      setMatricula("");
       setMsg("Alumno agregado.");
       router.refresh();
     } finally {
@@ -133,7 +135,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
   return (
     <Card title="Padrón de alumnos">
       <form className="space-y-3" onSubmit={addOne}>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Apellido y nombre">
             <Input
               value={studentName}
@@ -142,13 +144,21 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
               placeholder="Pérez, Ana"
             />
           </Field>
-          <Field label="DNI / Legajo">
+          <Field label="DNI">
             <Input
               value={studentDni}
               onChange={(e) => setStudentDni(e.target.value)}
               required
               inputMode="numeric"
               placeholder="40123456"
+            />
+          </Field>
+          <Field label="Matrícula">
+            <Input
+              value={matricula}
+              onChange={(e) => setMatricula(e.target.value)}
+              inputMode="numeric"
+              placeholder="1234"
             />
           </Field>
         </div>
@@ -160,7 +170,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
         <Field
           label="Carga masiva"
-          hint="Subí un PDF, una foto del listado, Excel (.xlsx) o CSV. También podés pegar texto: Nombre;DNI"
+          hint="Subí PDF, foto, Excel o CSV. Formato texto: Nombre;DNI;Matrícula"
         >
           <input
             ref={fileRef}
@@ -214,6 +224,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
                   <tr>
                     <th className="px-2 py-1.5">Nombre</th>
                     <th className="px-2 py-1.5">DNI</th>
+                    <th className="px-2 py-1.5">Matrícula</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,6 +233,9 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
                       <td className="px-2 py-1.5">{s.studentName}</td>
                       <td className="px-2 py-1.5 font-mono text-xs">
                         {s.studentDni}
+                      </td>
+                      <td className="px-2 py-1.5 font-mono text-xs">
+                        {s.matricula || "—"}
                       </td>
                     </tr>
                   ))}
@@ -232,12 +246,12 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
         ) : null}
 
         <form className="space-y-3" onSubmit={addBulk}>
-          <Field label="O pegá / editá la lista" hint="Una línea por alumno: Nombre;DNI">
+          <Field label="O pegá / editá la lista" hint="Una línea: Nombre;DNI;Matrícula">
             <TextArea
               rows={5}
               value={bulk}
               onChange={(e) => setBulk(e.target.value)}
-              placeholder={"Gómez, Luis;30111222\nRuiz, María;33444555"}
+              placeholder={"Gómez, Luis;30111222;1013\nRuiz, María;33444555;1060"}
             />
           </Field>
           <Button type="submit" disabled={loading || !bulk.trim()}>

@@ -32,6 +32,8 @@ model Enrollment {
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   studentName String
   studentDni  String
+  /// Matrícula universitaria (ej. 4 dígitos)
+  matricula   String?
   createdAt   DateTime @default(now())
 
   @@unique([courseId, studentDni])
