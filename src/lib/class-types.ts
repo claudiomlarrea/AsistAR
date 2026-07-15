@@ -2,16 +2,16 @@ export const CLASS_TYPES = [
   { value: "theoretical", label: "Clase teórica", topic: true },
   { value: "practical", label: "Clase práctica", topic: true },
   { value: "exam_partial", label: "Examen parcial", topic: false, max: 4 },
-  { value: "exam_makeup", label: "Examen recuperatorio", topic: false, max: 2 },
-  { value: "exam_final", label: "Examen final", topic: false, max: 1 },
+  { value: "exam_makeup", label: "Examen recuperatorio", topic: false, max: 4 },
+  { value: "exam_final", label: "Examen final", topic: false, max: 4 },
 ] as const;
 
 export type ClassTypeValue = (typeof CLASS_TYPES)[number]["value"];
 
 const LIMITS: Record<string, number> = {
   exam_partial: 4,
-  exam_makeup: 2,
-  exam_final: 1,
+  exam_makeup: 4,
+  exam_final: 4,
 };
 
 export function normalizeClassType(value: unknown): ClassTypeValue {

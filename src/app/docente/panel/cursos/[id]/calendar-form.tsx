@@ -58,9 +58,9 @@ export function CalendarForm({ courseId }: { courseId: string }) {
   return (
     <Card title="Calibrar clases">
       <p className="mb-4 text-xs text-slate-500">
-        Agregá una fecha por vez: teórica, práctica, parcial (máx. 4),
-        recuperatorio (máx. 2) o final (máx. 1). En teórica/práctica podés cargar
-        el tema.
+        Agregá una fecha por vez: teórica, práctica, parcial, recuperatorio o
+        final (máx. 4 cada tipo de examen). En teórica/práctica podés cargar el
+        tema.
       </p>
 
       <form className="space-y-3" onSubmit={onSubmit}>
