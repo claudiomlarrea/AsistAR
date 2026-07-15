@@ -33,7 +33,9 @@ export async function POST(request: Request, { params }: Params) {
 
     let weekdays: number[] = [];
     if (Array.isArray(body.weekdays)) {
-      weekdays = body.weekdays.map(Number).filter((d) => d >= 0 && d <= 6);
+      weekdays = body.weekdays
+        .map((d: unknown) => Number(d))
+        .filter((d: number) => d >= 0 && d <= 6);
     } else if (body.weekday != null) {
       weekdays = [Number(body.weekday)];
     }
