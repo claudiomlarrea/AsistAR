@@ -112,6 +112,8 @@ export default async function CoursePage({ params }: Props) {
                   <SessionActions
                     sessionId={session.id}
                     status={session.status}
+                    classType={session.classType}
+                    label={session.label}
                   />
                 </li>
               ))}

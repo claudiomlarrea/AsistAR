@@ -117,5 +117,39 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ session });
   }
 
+  if (action === "setType") {
+    const classType =
+      body.classType === "practical" ? "practical" : "theoretical";
+    const session = await prisma.classSession.update({
+      where: { id: sessionId },
+      data: { classType },
+      include: {
+        course: true,
+        attendances: { orderBy: { scannedAt: "asc" } },
+        _count: { select: { attendances: true } },
+      },
+    });
+    return NextResponse.json({ session });
+  }
+
+  if (action === "setLabel") {
+    const label = String(body.label ?? "").trim() || null;
+    const session = await prisma.classSession.update({
+      where: { id: sessionId },
+      data: { label },
+      include: {
+        course: true,
+        attendances: { orderBy: { scannedAt: "asc" } },
+        _count: { select: { attendances: true } },
+      },
+    });
+    return NextResponse.json({ session });
+  }
+
+  if (action === "delete") {
+    await prisma.classSession.delete({ where: { id: sessionId } });
+    return NextResponse.json({ ok: true });
+  }
+
   return NextResponse.json({ error: "Acción no válida." }, { status: 400 });
 }
