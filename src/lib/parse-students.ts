@@ -4,10 +4,28 @@ export type ParsedStudent = {
 };
 
 const HEADER_RE =
-  /^(apellido|nombre|dni|legajo|alumno|documento|n[°ºo]\.?|orden|#)\b/i;
+  /^(apellido|nombre|dni|legajo|alumno|documento|matricula|usar este|n[°ºo]\.?|orden|#)\b/i;
 
-/** Extrae alumnos (nombre + DNI/legajo) de un texto OCR o pegado. */
+/**
+ * Extrae alumnos (nombre + DNI/legajo) de texto pegado, OCR o PDF.
+ * Soporta líneas normales y listados "aplastados" en una sola línea.
+ */
 export function parseStudentListText(text: string): ParsedStudent[] {
+  const cleaned = text
+    .replace(/\u00a0/g, " ")
+    .replace(/[^\S\n]+/g, " ")
+    .trim();
+
+  const fromLines = parseByLines(cleaned);
+  const fromFlat = parseFlattenedRoster(cleaned);
+
+  // Prefer the richer parse (e.g. PDF sin saltos de línea)
+  if (fromFlat.length > fromLines.length) return fromFlat;
+  if (fromLines.length > 0) return fromLines;
+  return fromFlat;
+}
+
+function parseByLines(text: string): ParsedStudent[] {
   const results: ParsedStudent[] = [];
   const seen = new Set<string>();
 
@@ -22,6 +40,12 @@ export function parseStudentListText(text: string): ParsedStudent[] {
       continue;
     }
 
+    const numbered = parseNumberedRow(line);
+    if (numbered) {
+      addUnique(results, seen, numbered);
+      continue;
+    }
+
     const withDni = parseLineWithEmbeddedDni(line);
     if (withDni) {
       addUnique(results, seen, withDni);
@@ -29,6 +53,53 @@ export function parseStudentListText(text: string): ParsedStudent[] {
   }
 
   return results;
+}
+
+/**
+ * Detecta patrones repetidos tipo:
+ * 1 Garcia, Ana 30041827 1013 2 Gonzalez, Juan 30041964 1060 ...
+ * o sin DNI: 1 Garcia, Ana 1013 2 Gonzalez, Juan 30041964 1060
+ */
+function parseFlattenedRoster(text: string): ParsedStudent[] {
+  const flat = text.replace(/\s+/g, " ").trim();
+  const results: ParsedStudent[] = [];
+  const seen = new Set<string>();
+
+  const re =
+    /\b(\d{1,3})\s+([A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*,\s*[A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*)\s+(?:(\d{7,8})\s+)?(\d{4})\b/g;
+
+  for (const match of flat.matchAll(re)) {
+    const studentName = match[2].replace(/\s+/g, " ").trim();
+    const dni = match[3] || match[4]; // prefer DNI; fallback matrícula
+    if (!studentName || studentName.length < 3) continue;
+    addUnique(results, seen, { studentName, studentDni: dni });
+  }
+
+  // Also: Name;DNI;Mat repeated without newlines
+  if (results.length === 0) {
+    const semi =
+      /([A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*,\s*[A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*)\s*;\s*(\d{4,8})/g;
+    for (const match of flat.matchAll(semi)) {
+      addUnique(results, seen, {
+        studentName: match[1].trim(),
+        studentDni: match[2],
+      });
+    }
+  }
+
+  return results;
+}
+
+/** "1 Garcia, Ana 30041827 1013" en una sola línea */
+function parseNumberedRow(line: string): ParsedStudent | null {
+  const m = line.match(
+    /^\d{1,3}[.)]?\s+([A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*,\s*[A-Za-zÁÉÍÓÚÑÜáéíóúñü][A-Za-zÁÉÍÓÚÑÜáéíóúñü' .\-]*)\s+(?:(\d{7,8})\s+)?(\d{4})\s*$/i,
+  );
+  if (!m) return null;
+  return {
+    studentName: m[1].replace(/\s+/g, " ").trim(),
+    studentDni: m[2] || m[3],
+  };
 }
 
 function addUnique(
@@ -43,7 +114,6 @@ function addUnique(
 
 function normalizeDni(value: string): string | null {
   const digits = value.replace(/\D/g, "");
-  // DNI (7–8) o matrícula/legajo corto (4–6)
   if (digits.length < 4 || digits.length > 8) return null;
   return digits;
 }
@@ -56,12 +126,10 @@ function parseSeparatedLine(line: string): ParsedStudent | null {
     .map((p) => p.trim())
     .filter(Boolean);
 
-  // Also try "Apellido, Nombre, 40123456" or last cell mostly numeric
   if (parts.length < 2) {
     const commaParts = line.split(",").map((p) => p.trim()).filter(Boolean);
     if (commaParts.length >= 2) {
       const last = commaParts[commaParts.length - 1];
-      // Last fragment must be DNI-like, not "Ana 40123456"
       if (/^[\d.\-\s]+$/.test(last)) {
         const dni = normalizeDni(last);
         if (dni) {
@@ -75,10 +143,13 @@ function parseSeparatedLine(line: string): ParsedStudent | null {
     return null;
   }
 
-  let dniIdx = parts.findIndex((p) => normalizeDni(p));
+  // Prefer 7–8 digit DNI when both DNI and matrícula appear
+  let dniIdx = parts.findIndex((p) => {
+    const d = p.replace(/\D/g, "");
+    return d.length >= 7 && d.length <= 8;
+  });
   if (dniIdx === -1) {
-    // "Nombre;30111222 extra"
-    dniIdx = parts.findIndex((p) => /\d{7,8}/.test(p.replace(/\D/g, "")));
+    dniIdx = parts.findIndex((p) => normalizeDni(p));
   }
   if (dniIdx === -1) return null;
 
@@ -87,6 +158,11 @@ function parseSeparatedLine(line: string): ParsedStudent | null {
 
   const studentName = parts
     .filter((_, i) => i !== dniIdx)
+    .filter((p) => {
+      const d = p.replace(/\D/g, "");
+      // drop leftover matricula-only cells from the name
+      return !(d.length >= 4 && d.length <= 6 && d === p.replace(/\D/g, ""));
+    })
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
@@ -106,16 +182,16 @@ function parseLineWithEmbeddedDni(line: string): ParsedStudent | null {
   )[0];
 
   const dni = normalizeDni(best[1]);
-  if (!dni) return null;
+  if (!dni || dni.length < 7) return null;
 
   let name = line
     .replace(best[0], " ")
+    .replace(/\b\d{4}\b/g, " ") // drop matrícula
     .replace(/[|;]+/g, " ")
     .replace(/^\d{1,3}\s*[.)\-:]?\s*/, "")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Clean leftover punctuation
   name = name.replace(/^[,.\-–—]+|[,.\-–—]+$/g, "").trim();
 
   if (name.length < 3) return null;

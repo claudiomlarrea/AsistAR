@@ -75,10 +75,33 @@ async function extractFromPdf(file: File): Promise<string> {
   for (let i = 1; i <= doc.numPages; i += 1) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const text = content.items
-      .map((item) => ("str" in item ? item.str : ""))
-      .join(" ");
-    pages.push(text);
+    type TextItem = { str: string; transform: number[] };
+    const items = content.items.filter(
+      (item): item is TextItem => "str" in item && typeof item.str === "string",
+    );
+
+    // Agrupar por renglón (coordenada Y) para no aplastar el listado
+    const rows = new Map<number, { x: number; str: string }[]>();
+    for (const item of items) {
+      if (!item.str.trim()) continue;
+      const y = Math.round(item.transform[5]);
+      const x = item.transform[4];
+      const bucket = rows.get(y) ?? [];
+      bucket.push({ x, str: item.str });
+      rows.set(y, bucket);
+    }
+
+    const orderedY = [...rows.keys()].sort((a, b) => b - a);
+    const lines = orderedY.map((y) =>
+      rows
+        .get(y)!
+        .sort((a, b) => a.x - b.x)
+        .map((c) => c.str)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    );
+    pages.push(lines.filter(Boolean).join("\n"));
   }
 
   const joined = pages.join("\n");
