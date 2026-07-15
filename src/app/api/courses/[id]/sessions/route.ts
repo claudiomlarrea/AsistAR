@@ -1,9 +1,36 @@
 import { NextResponse } from "next/server";
+import {
+  classTypeLabel,
+  classTypeLimit,
+  normalizeClassType,
+} from "@/lib/class-types";
 import { getTeacherIdFromSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { newQrToken } from "@/lib/utils";
 
 type Params = { params: Promise<{ id: string }> };
+
+async function assertClassTypeAllowed(
+  courseId: string,
+  classType: string,
+  excludeSessionId?: string,
+): Promise<string | null> {
+  const limit = classTypeLimit(classType);
+  if (limit == null) return null;
+
+  const count = await prisma.classSession.count({
+    where: {
+      courseId,
+      classType,
+      ...(excludeSessionId ? { id: { not: excludeSessionId } } : {}),
+    },
+  });
+
+  if (count >= limit) {
+    return `Ya hay ${count} ${classTypeLabel(classType).toLowerCase()}${count === 1 ? "" : "s"} (máximo ${limit}).`;
+  }
+  return null;
+}
 
 export async function POST(request: Request, { params }: Params) {
   const teacherId = await getTeacherIdFromSession();
@@ -21,10 +48,8 @@ export async function POST(request: Request, { params }: Params) {
 
   const body = await request.json();
 
-  // Generate recurring calendar (one or more weekdays)
   if (body.generate) {
-    const classType =
-      body.classType === "practical" ? "practical" : "theoretical";
+    const classType = normalizeClassType(body.classType);
     const startTime = String(body.startTime ?? "16:00");
     const endTime = String(body.endTime ?? "18:00");
     const fromDate = String(body.fromDate ?? "");
@@ -48,6 +73,30 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
+    // Estimate how many would be created for exam limits
+    const limit = classTypeLimit(classType);
+    if (limit != null) {
+      const [sh, sm] = startTime.split(":").map(Number);
+      const cursor = new Date(`${fromDate}T12:00:00`);
+      const end = new Date(`${toDate}T12:00:00`);
+      let wouldCreate = 0;
+      while (cursor <= end) {
+        if (weekdays.includes(cursor.getDay())) wouldCreate += 1;
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      const existing = await prisma.classSession.count({
+        where: { courseId, classType },
+      });
+      if (existing + wouldCreate > limit) {
+        return NextResponse.json(
+          {
+            error: `No se pueden generar ${wouldCreate} ${classTypeLabel(classType).toLowerCase()}s: el máximo es ${limit}. Usá “Una clase”.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
     const cursor = new Date(`${fromDate}T12:00:00`);
@@ -61,7 +110,6 @@ export async function POST(request: Request, { params }: Params) {
         const endsAt = new Date(cursor);
         endsAt.setHours(eh, em, 0, 0);
 
-        // Avoid exact duplicates (same start)
         const exists = await prisma.classSession.findFirst({
           where: { courseId, startsAt },
         });
@@ -89,7 +137,6 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ created: created.length, sessions: created });
   }
 
-  // Bulk typed sessions: [{ startsAt, endsAt, classType, label? }]
   if (Array.isArray(body.sessions)) {
     let created = 0;
     for (const item of body.sessions) {
@@ -98,8 +145,11 @@ export async function POST(request: Request, { params }: Params) {
       if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
         continue;
       }
-      const classType =
-        item.classType === "practical" ? "practical" : "theoretical";
+      const classType = normalizeClassType(item.classType);
+      const limitError = await assertClassTypeAllowed(courseId, classType);
+      if (limitError) {
+        return NextResponse.json({ error: limitError, created }, { status: 400 });
+      }
       const label = String(item.label ?? "").trim() || null;
       try {
         await prisma.classSession.create({
@@ -121,11 +171,9 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ created });
   }
 
-  // Single session
   const startsAt = new Date(body.startsAt);
   const endsAt = new Date(body.endsAt);
-  const classType =
-    body.classType === "practical" ? "practical" : "theoretical";
+  const classType = normalizeClassType(body.classType);
   const label = String(body.label ?? "").trim() || null;
 
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
@@ -133,6 +181,11 @@ export async function POST(request: Request, { params }: Params) {
       { error: "Fechas u horarios inválidos." },
       { status: 400 },
     );
+  }
+
+  const limitError = await assertClassTypeAllowed(courseId, classType);
+  if (limitError) {
+    return NextResponse.json({ error: limitError }, { status: 400 });
   }
 
   const session = await prisma.classSession.create({

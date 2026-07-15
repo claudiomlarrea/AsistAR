@@ -10,6 +10,7 @@ import {
   formatTime,
   statusLabel,
 } from "@/lib/utils";
+import { classTypeBadgeTone } from "@/lib/class-types";
 import { AddStudentsForm } from "./add-students-form";
 import { CalendarForm } from "./calendar-form";
 import { SessionActions } from "./session-actions";
@@ -82,11 +83,7 @@ export default async function CoursePage({ params }: Props) {
                       <span className="font-medium text-slate-900">
                         {formatDate(session.startsAt)}
                       </span>
-                      <Badge
-                        tone={
-                          session.classType === "practical" ? "info" : "teal"
-                        }
-                      >
+                      <Badge tone={classTypeBadgeTone(session.classType)}>
                         {classTypeLabel(session.classType)}
                       </Badge>
                       <Badge

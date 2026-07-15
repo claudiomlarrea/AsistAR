@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  classTypeLabel,
+  classTypeLimit,
+  normalizeClassType,
+} from "@/lib/class-types";
 import { getTeacherIdFromSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { newQrToken } from "@/lib/utils";
@@ -57,7 +62,6 @@ export async function PATCH(request: Request, { params }: Params) {
   const action = String(body.action ?? "");
 
   if (action === "open") {
-    // Close any other open sessions in this course
     await prisma.classSession.updateMany({
       where: {
         courseId: existing.courseId,
@@ -73,7 +77,7 @@ export async function PATCH(request: Request, { params }: Params) {
         status: "open",
         openedAt: new Date(),
         closedAt: null,
-        qrToken: newQrToken(), // fresh token when opening
+        qrToken: newQrToken(),
       },
       include: {
         course: true,
@@ -118,8 +122,26 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   if (action === "setType") {
-    const classType =
-      body.classType === "practical" ? "practical" : "theoretical";
+    const classType = normalizeClassType(body.classType);
+    const limit = classTypeLimit(classType);
+    if (limit != null && classType !== existing.classType) {
+      const count = await prisma.classSession.count({
+        where: {
+          courseId: existing.courseId,
+          classType,
+          id: { not: sessionId },
+        },
+      });
+      if (count >= limit) {
+        return NextResponse.json(
+          {
+            error: `Ya hay ${count} ${classTypeLabel(classType).toLowerCase()}${count === 1 ? "" : "s"} (máximo ${limit}).`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const session = await prisma.classSession.update({
       where: { id: sessionId },
       data: { classType },

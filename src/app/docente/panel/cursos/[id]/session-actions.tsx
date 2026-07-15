@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Select } from "@/components/ui";
+import { CLASS_TYPES, classTypeAllowsTopic } from "@/lib/class-types";
 
 export function SessionActions({
   sessionId,
@@ -18,42 +19,53 @@ export function SessionActions({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(label ?? "");
+  const [typeError, setTypeError] = useState("");
+
+  useEffect(() => {
+    setLabelDraft(label ?? "");
+  }, [label]);
+
+  const showTopic = classTypeAllowsTopic(classType);
 
   async function act(action: string, extra: Record<string, unknown> = {}) {
     setLoading(true);
+    setTypeError("");
     try {
       const res = await fetch(`/api/sessions/${sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...extra }),
       });
-      if (res.ok) {
-        if (action === "open") {
-          window.location.href = `/docente/panel/sesiones/${sessionId}/qr`;
-          return;
-        }
-        router.refresh();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTypeError(data.error || "No se pudo actualizar.");
+        return;
       }
+      if (action === "open") {
+        window.location.href = `/docente/panel/sesiones/${sessionId}/qr`;
+        return;
+      }
+      router.refresh();
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-2 sm:items-end">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex w-full flex-col gap-2 sm:max-w-md sm:items-end">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
         <Select
           value={classType}
           disabled={loading}
-          className="!w-auto min-w-[8rem]"
-          onChange={(e) =>
-            act("setType", { classType: e.target.value })
-          }
+          className="!w-auto min-w-[11rem]"
+          onChange={(e) => act("setType", { classType: e.target.value })}
         >
-          <option value="theoretical">Teórica</option>
-          <option value="practical">Práctica</option>
+          {CLASS_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
         </Select>
 
         {status === "open" ? (
@@ -94,44 +106,49 @@ export function SessionActions({
         </Button>
       </div>
 
-      {editingLabel ? (
-        <div className="flex flex-wrap gap-2">
+      {showTopic ? (
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <label className="text-xs font-medium text-slate-600">Tema</label>
           <input
             value={labelDraft}
             onChange={(e) => setLabelDraft(e.target.value)}
-            placeholder="Tema / docente"
-            className="min-w-[12rem] flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm"
-          />
-          <Button
-            size="sm"
+            onBlur={() => {
+              if ((label ?? "") !== labelDraft.trim()) {
+                act("setLabel", { label: labelDraft });
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            placeholder="Tema de la clase…"
+            className="min-w-[12rem] flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm outline-none ring-teal-500 focus:ring-2"
             disabled={loading}
-            onClick={async () => {
-              await act("setLabel", { label: labelDraft });
-              setEditingLabel(false);
-            }}
-          >
-            Guardar
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setLabelDraft(label ?? "");
-              setEditingLabel(false);
-            }}
-          >
-            Cancelar
-          </Button>
+          />
         </div>
       ) : (
-        <button
-          type="button"
-          className="text-left text-xs text-teal-700 hover:underline"
-          onClick={() => setEditingLabel(true)}
-        >
-          {label ? `Tema: ${label} (editar)` : "+ Agregar tema / etiqueta"}
-        </button>
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <label className="text-xs font-medium text-slate-600">Detalle</label>
+          <input
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={() => {
+              if ((label ?? "") !== labelDraft.trim()) {
+                act("setLabel", { label: labelDraft });
+              }
+            }}
+            placeholder="Ej. 1º parcial presencial"
+            className="min-w-[12rem] flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-sm outline-none ring-teal-500 focus:ring-2"
+            disabled={loading}
+          />
+        </div>
       )}
+
+      {typeError ? (
+        <p className="text-xs text-red-600">{typeError}</p>
+      ) : null}
     </div>
   );
 }

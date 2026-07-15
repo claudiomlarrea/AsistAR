@@ -1,4 +1,5 @@
 import { customAlphabet } from "nanoid";
+import { classTypeLabel as labelFromTypes } from "@/lib/class-types";
 
 const nano = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 10);
 
@@ -7,7 +8,7 @@ export function newQrToken(): string {
 }
 
 export function classTypeLabel(type: string): string {
-  return type === "practical" ? "Práctica" : "Teórica";
+  return labelFromTypes(type);
 }
 
 export function statusLabel(status: string): string {

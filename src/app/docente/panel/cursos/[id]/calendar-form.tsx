@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
+import { CLASS_TYPES, classTypeAllowsTopic } from "@/lib/class-types";
 
 const WEEKDAYS = [
   { value: 1, label: "Lunes" },
@@ -18,7 +19,7 @@ export function CalendarForm({ courseId }: { courseId: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<"recurring" | "single">("recurring");
   const [classType, setClassType] = useState("theoretical");
-  const [weekdays, setWeekdays] = useState<number[]>([1, 3]); // Lun + Mié
+  const [weekdays, setWeekdays] = useState<number[]>([1, 3]);
   const [startTime, setStartTime] = useState("16:00");
   const [endTime, setEndTime] = useState("18:00");
   const [fromDate, setFromDate] = useState("");
@@ -29,6 +30,19 @@ export function CalendarForm({ courseId }: { courseId: string }) {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const showTopic = classTypeAllowsTopic(classType);
+  const isExam = useMemo(
+    () => classType.startsWith("exam_"),
+    [classType],
+  );
+
+  function onTypeChange(value: string) {
+    setClassType(value);
+    if (value.startsWith("exam_")) {
+      setMode("single");
+    }
+  }
 
   function toggleWeekday(day: number) {
     setWeekdays((prev) =>
@@ -78,8 +92,8 @@ export function CalendarForm({ courseId }: { courseId: string }) {
       }
       setMsg(
         mode === "recurring"
-          ? `Se generaron ${data.created} clases. Después podés marcar cada una como Teórica o Práctica.`
-          : "Clase agregada.",
+          ? `Se generaron ${data.created} clases. Completá el tema en cada teórica/práctica.`
+          : "Fecha agregada.",
       );
       router.refresh();
     } finally {
@@ -90,9 +104,9 @@ export function CalendarForm({ courseId }: { courseId: string }) {
   return (
     <Card title="Calibrar clases">
       <p className="mb-4 text-xs text-slate-500">
-        Tip Medicina: generá Lunes + Miércoles 16–18 y luego, en la lista,
-        cambiá a <strong>Práctica</strong> las fechas que correspondan. Borra
-        feriados.
+        Clases teóricas/prácticas: generá el calendario recurrente. Exámenes:
+        usá <strong>Una clase</strong> (hasta 4 parciales, 2 recuperatorios y 1
+        final).
       </p>
 
       <div className="mb-4 flex gap-2">
@@ -101,6 +115,7 @@ export function CalendarForm({ courseId }: { courseId: string }) {
           size="sm"
           variant={mode === "recurring" ? "primary" : "secondary"}
           onClick={() => setMode("recurring")}
+          disabled={isExam}
         >
           Recurrente
         </Button>
@@ -110,30 +125,38 @@ export function CalendarForm({ courseId }: { courseId: string }) {
           variant={mode === "single" ? "primary" : "secondary"}
           onClick={() => setMode("single")}
         >
-          Una clase
+          Una clase / examen
         </Button>
       </div>
 
       <form className="space-y-3" onSubmit={onSubmit}>
-        <Field label="Tipo inicial">
-          <Select
-            value={classType}
-            onChange={(e) => setClassType(e.target.value)}
-          >
-            <option value="theoretical">Teórica</option>
-            <option value="practical">Práctica</option>
+        <Field label="Tipo">
+          <Select value={classType} onChange={(e) => onTypeChange(e.target.value)}>
+            {CLASS_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+                {"max" in t && t.max ? ` (máx. ${t.max})` : ""}
+              </option>
+            ))}
           </Select>
         </Field>
-        <Field
-          label="Etiqueta / tema (opcional)"
-          hint="Ej. Inflamación · BIBI"
-        >
-          <Input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Tema o docente"
-          />
-        </Field>
+        {showTopic ? (
+          <Field label="Tema de la clase" hint="Se puede editar después en cada fecha">
+            <Input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Ej. Inflamación · mecanismos TH1"
+            />
+          </Field>
+        ) : (
+          <Field label="Detalle del examen (opcional)">
+            <Input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Ej. 1º parcial presencial"
+            />
+          </Field>
+        )}
 
         {mode === "recurring" ? (
           <>
