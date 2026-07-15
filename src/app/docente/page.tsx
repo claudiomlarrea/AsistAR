@@ -10,29 +10,32 @@ export default function DocenteAuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      const res = await fetch(
-        mode === "login" ? "/api/auth/login" : "/api/auth/register",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, pin }),
-        },
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Error de autenticación.");
+      const endpoint =
+        mode === "login" ? "/api/auth/login" : "/api/auth/register";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, pin }),
+      });
+
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setError(data.error ?? "Ocurrió un error.");
         return;
       }
+
       router.push("/docente/panel");
       router.refresh();
     } catch {
@@ -43,82 +46,61 @@ export default function DocenteAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-teal-50">
+    <div className="min-h-screen bg-slate-50">
       <SiteHeader />
-      <main className="mx-auto max-w-md px-4 py-10">
-        <Card title={mode === "login" ? "Ingreso docente" : "Crear cuenta"}>
-          <form className="space-y-4" onSubmit={onSubmit}>
-            {mode === "register" && (
-              <Field label="Nombre">
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  autoComplete="name"
-                  placeholder="Prof. García"
-                />
-              </Field>
-            )}
-            <Field label="Email">
+      <main className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-12">
+        <Card title={mode === "login" ? "Acceso docente" : "Registro docente"}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Field label="Nombre completo">
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Ej. Dra. María López"
                 required
-                autoComplete="email"
-                placeholder="docente@universidad.edu"
+                autoComplete="name"
               />
             </Field>
-            <Field label="PIN (4+ dígitos)" hint="Como en EvaluAR: simple y usable en el aula.">
+            <Field
+              label="PIN de acceso"
+              hint="Mínimo 4 caracteres. Guardalo en un lugar seguro."
+            >
               <Input
                 type="password"
-                inputMode="numeric"
                 value={pin}
-                onChange={(e) => setPin(e.target.value)}
-                required
-                minLength={4}
-                autoComplete="current-password"
+                onChange={(event) => setPin(event.target.value)}
                 placeholder="••••"
+                minLength={4}
+                required
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
               />
             </Field>
+
             {error ? <Alert>{error}</Alert> : null}
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+
+            <Button type="submit" disabled={loading} className="w-full" size="lg">
               {loading
-                ? "Esperá…"
+                ? "Procesando..."
                 : mode === "login"
-                  ? "Entrar al panel"
+                  ? "Ingresar"
                   : "Crear cuenta"}
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-slate-600">
-            {mode === "login" ? (
-              <>
-                ¿Primera vez?{" "}
-                <button
-                  type="button"
-                  className="font-medium text-teal-700"
-                  onClick={() => setMode("register")}
-                >
-                  Crear cuenta
-                </button>
-              </>
-            ) : (
-              <>
-                ¿Ya tenés cuenta?{" "}
-                <button
-                  type="button"
-                  className="font-medium text-teal-700"
-                  onClick={() => setMode("login")}
-                >
-                  Ingresar
-                </button>
-              </>
-            )}
-          </p>
+          <button
+            type="button"
+            className="mt-4 text-sm text-teal-700 hover:underline"
+            onClick={() => {
+              setMode(mode === "login" ? "register" : "login");
+              setError("");
+            }}
+          >
+            {mode === "login"
+              ? "¿Primera vez? Crear cuenta docente"
+              : "¿Ya tenés cuenta? Iniciar sesión"}
+          </button>
         </Card>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-slate-500">
           <Link href="/" className="hover:text-teal-700">
             ← Volver al inicio
           </Link>

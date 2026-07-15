@@ -32,7 +32,6 @@ async function main() {
   const teacher = await prisma.teacher.create({
     data: {
       name: "Dra. Demo",
-      email: "demo@asistar.edu",
       pinHash: hashPin("1234"),
     },
   });
@@ -95,7 +94,7 @@ async function main() {
   });
 
   console.log("Seed OK en Neon");
-  console.log("Docente: demo@asistar.edu / PIN 1234");
+  console.log("Docente: Dra. Demo / PIN 1234");
   await prisma.$disconnect();
 }
 

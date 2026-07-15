@@ -10,7 +10,7 @@ export async function GET() {
 
   const teacher = await prisma.teacher.findUnique({
     where: { id: teacherId },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true },
   });
 
   return NextResponse.json({ teacher });

@@ -35,7 +35,7 @@ export default async function PanelPage() {
             <h1 className="text-2xl font-bold text-slate-900">
               Hola, {teacher.name}
             </h1>
-            <p className="text-sm text-slate-500">{teacher.email}</p>
+            <p className="text-sm text-slate-500">Panel docente AsistAR</p>
           </div>
           <LogoutButton />
         </div>

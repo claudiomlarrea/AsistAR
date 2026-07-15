@@ -4,23 +4,37 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const email = String(body.email ?? "").trim().toLowerCase();
-    const pin = String(body.pin ?? "").trim();
+    const body = (await request.json()) as {
+      name?: string;
+      pin?: string;
+    };
 
-    const teacher = await prisma.teacher.findUnique({ where: { email } });
+    const name = body.name?.trim();
+    const pin = body.pin?.trim();
+
+    if (!name || !pin) {
+      return NextResponse.json(
+        { error: "Nombre y PIN son obligatorios." },
+        { status: 400 },
+      );
+    }
+
+    const teacher = await prisma.teacher.findFirst({
+      where: { name },
+    });
+
     if (!teacher || !verifyPin(pin, teacher.pinHash)) {
       return NextResponse.json(
-        { error: "Email o PIN incorrectos." },
+        { error: "Credenciales incorrectas." },
         { status: 401 },
       );
     }
 
     await setTeacherSession(teacher.id);
+
     return NextResponse.json({
       id: teacher.id,
       name: teacher.name,
-      email: teacher.email,
     });
   } catch {
     return NextResponse.json(

@@ -52,7 +52,7 @@ npm run db:seed
 npm run dev
 ```
 
-**Cuenta demo:** `demo@asistar.edu` · PIN `1234`
+**Cuenta demo:** `Dra. Demo` · PIN `1234`
 
 ## Uso local
 

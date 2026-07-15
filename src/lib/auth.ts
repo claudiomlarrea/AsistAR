@@ -34,12 +34,14 @@ export async function setTeacherSession(teacherId: string): Promise<string> {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
   });
   cookieStore.set(TEACHER_TOKEN_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
   });
   return token;

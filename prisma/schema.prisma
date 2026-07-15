@@ -9,7 +9,6 @@ datasource db {
 model Teacher {
   id        String   @id @default(cuid())
   name      String
-  email     String   @unique
   pinHash   String
   courses   Course[]
   createdAt DateTime @default(now())
