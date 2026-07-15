@@ -20,20 +20,13 @@ export async function POST(request: Request, { params }: Params) {
 
   const body = await request.json();
 
-  // Bulk paste: "Apellido Nombre;DNI" per line OR single student
-  if (typeof body.bulk === "string" && body.bulk.trim()) {
-    const lines = String(body.bulk)
-      .split(/\r?\n/)
-      .map((l: string) => l.trim())
-      .filter(Boolean);
-
+  // Confirmed list from OCR / preview
+  if (Array.isArray(body.students)) {
     let created = 0;
-    for (const line of lines) {
-      const parts = line.split(/[;,\t]/).map((p: string) => p.trim());
-      const studentName = parts[0];
-      const studentDni = (parts[1] || parts[0]).replace(/\D/g, "");
-      if (!studentName || !studentDni) continue;
-
+    for (const item of body.students) {
+      const studentName = String(item.studentName ?? "").trim();
+      const studentDni = String(item.studentDni ?? "").replace(/\D/g, "");
+      if (!studentName || studentDni.length < 7) continue;
       try {
         await prisma.enrollment.create({
           data: { courseId, studentName, studentDni },
@@ -43,7 +36,28 @@ export async function POST(request: Request, { params }: Params) {
         // skip duplicates
       }
     }
+    return NextResponse.json({ created });
+  }
 
+  // Bulk paste: "Apellido Nombre;DNI" per line OR single student
+  if (typeof body.bulk === "string" && body.bulk.trim()) {
+    const { parseStudentListText } = await import("@/lib/parse-students");
+    const parsed = parseStudentListText(String(body.bulk));
+    let created = 0;
+    for (const student of parsed) {
+      try {
+        await prisma.enrollment.create({
+          data: {
+            courseId,
+            studentName: student.studentName,
+            studentDni: student.studentDni,
+          },
+        });
+        created += 1;
+      } catch {
+        // skip duplicates
+      }
+    }
     return NextResponse.json({ created });
   }
 
