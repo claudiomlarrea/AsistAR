@@ -55,16 +55,19 @@ function parseSeparatedLine(line: string): ParsedStudent | null {
     .map((p) => p.trim())
     .filter(Boolean);
 
-  // Also try "Apellido, Nombre, 40123456" or "Apellido, Nombre 40123456"
+  // Also try "Apellido, Nombre, 40123456" or last cell mostly numeric
   if (parts.length < 2) {
     const commaParts = line.split(",").map((p) => p.trim()).filter(Boolean);
     if (commaParts.length >= 2) {
       const last = commaParts[commaParts.length - 1];
-      const dni = normalizeDni(last);
-      if (dni) {
-        const studentName = commaParts.slice(0, -1).join(", ").trim();
-        if (studentName.length >= 3) {
-          return { studentName, studentDni: dni };
+      // Last fragment must be DNI-like, not "Ana 40123456"
+      if (/^[\d.\-\s]+$/.test(last)) {
+        const dni = normalizeDni(last);
+        if (dni) {
+          const studentName = commaParts.slice(0, -1).join(", ").trim();
+          if (studentName.length >= 3) {
+            return { studentName, studentDni: dni };
+          }
         }
       }
     }
