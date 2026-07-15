@@ -75,9 +75,16 @@ async function extractFromPdf(file: File): Promise<string> {
   for (let i = 1; i <= doc.numPages; i += 1) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    type TextItem = { str: string; transform: number[] };
     const items = content.items.filter(
-      (item): item is TextItem => "str" in item && typeof item.str === "string",
+      (item): item is { str: string; transform: number[] } =>
+        Boolean(
+          item &&
+            typeof item === "object" &&
+            "str" in item &&
+            typeof (item as { str?: unknown }).str === "string" &&
+            "transform" in item &&
+            Array.isArray((item as { transform?: unknown }).transform),
+        ),
     );
 
     // Agrupar por renglón (coordenada Y) para no aplastar el listado
