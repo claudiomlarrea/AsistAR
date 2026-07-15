@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  pinHash   String
+  courses   Course[]
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id         String         @id @default(cuid())
+  teacherId  String
+  teacher    Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title      String
+  subject    String?
+  commission String?
+  students   Enrollment[]
+  sessions   ClassSession[]
+  createdAt  DateTime       @default(now())
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName String
+  studentDni  String
+  createdAt   DateTime @default(now())
+
+  @@unique([courseId, studentDni])
+}
+
+model ClassSession {
+  id          String             @id @default(cuid())
+  courseId    String
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  label       String?
+  /// theoretical | practical
+  classType   String             @default("theoretical")
+  startsAt    DateTime
+  endsAt      DateTime
+  /// scheduled | open | closed
+  status      String             @default("scheduled")
+  qrToken     String             @unique
+  openedAt    DateTime?
+  closedAt    DateTime?
+  attendances AttendanceRecord[]
+  createdAt   DateTime           @default(now())
+}
+
+model AttendanceRecord {
+  id          String       @id @default(cuid())
+  sessionId   String
+  session     ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentName String
+  studentDni  String
+  /// present | late
+  status      String       @default("present")
+  scannedAt   DateTime     @default(now())
+
+  @@unique([sessionId, studentDni])
+}
