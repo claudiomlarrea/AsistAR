@@ -50,14 +50,15 @@ export default function DocenteAuthPage() {
       <SiteHeader />
       <main className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-12">
         <Card title={mode === "login" ? "Acceso docente" : "Registro docente"}>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit} autoComplete="off">
             <Field label="Nombre completo">
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Ej. Dra. María López"
                 required
-                autoComplete="name"
+                autoComplete="off"
+                name="asistar-teacher-name"
               />
             </Field>
             <Field
@@ -71,7 +72,8 @@ export default function DocenteAuthPage() {
                 placeholder="••••"
                 minLength={4}
                 required
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete="new-password"
+                name="asistar-teacher-pin"
               />
             </Field>
 
