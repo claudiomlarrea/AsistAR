@@ -43,7 +43,8 @@ function addUnique(
 
 function normalizeDni(value: string): string | null {
   const digits = value.replace(/\D/g, "");
-  if (digits.length < 7 || digits.length > 8) return null;
+  // DNI (7–8) o matrícula/legajo corto (4–6)
+  if (digits.length < 4 || digits.length > 8) return null;
   return digits;
 }
 

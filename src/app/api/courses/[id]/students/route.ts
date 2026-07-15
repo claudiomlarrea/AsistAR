@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: Params) {
     for (const item of body.students) {
       const studentName = String(item.studentName ?? "").trim();
       const studentDni = String(item.studentDni ?? "").replace(/\D/g, "");
-      if (!studentName || studentDni.length < 7) continue;
+      if (!studentName || studentDni.length < 4) continue;
       try {
         await prisma.enrollment.create({
           data: { courseId, studentName, studentDni },
