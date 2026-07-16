@@ -54,7 +54,9 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
     setError("");
     setMsg("");
     if (!bulk.trim()) {
-      setError("Pegá al menos un alumno en la lista (Nombre;DNI;Matrícula).");
+      setError(
+        "Primero elegí un archivo o pegá alumnos (Nombre;DNI;Matrícula), y después tocá Cargar lista.",
+      );
       return;
     }
     setLoading(true);
@@ -71,31 +73,6 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       }
       setBulk("");
       setPreview([]);
-      setMsg(`Se agregaron ${data.created} alumnos.`);
-      router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function confirmPreview() {
-    if (preview.length === 0) return;
-    setLoading(true);
-    setError("");
-    setMsg("");
-    try {
-      const res = await fetch(`/api/courses/${courseId}/students`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ students: preview }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "No se pudo cargar.");
-        return;
-      }
-      setPreview([]);
-      setBulk("");
       if (fileRef.current) fileRef.current.value = "";
       setMsg(`Se agregaron ${data.created} alumnos al padrón.`);
       router.refresh();
@@ -115,7 +92,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       const students = extractStudentsFromFileText(text);
       if (students.length === 0) {
         setError(
-          "No pude detectar alumnos. Probá con una foto más nítida, o pegá la lista como Nombre;DNI.",
+          "No pude detectar alumnos en el archivo. Pegá o editá la lista abajo (Nombre;DNI;Matrícula) y tocá Cargar lista.",
         );
         setBulk(text.slice(0, 2000));
         return;
@@ -123,13 +100,11 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       setPreview(students);
       setBulk(studentsToBulkText(students));
       setMsg(
-        `Detecté ${students.length} alumno${students.length === 1 ? "" : "s"}. Revisá la vista previa y confirmá.`,
+        `Archivo leído: ${students.length} alumno${students.length === 1 ? "" : "s"}. Revisá el cuadro y tocá “Cargar lista”.`,
       );
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "No se pudo leer el archivo.",
+        err instanceof Error ? err.message : "No se pudo leer el archivo.",
       );
     } finally {
       setScanning(false);
@@ -172,15 +147,20 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
       </form>
 
       <div className="mt-5 space-y-3 border-t border-slate-100 pt-5">
-        <Field
-          label="Carga masiva"
-          hint="Subí PDF, foto, Excel o CSV. Formato texto: Nombre;DNI;Matrícula"
-        >
+        <p className="text-sm font-medium text-slate-800">Carga masiva</p>
+        <p className="text-xs text-slate-500">
+          <strong>Elegir archivo</strong> solo completa el cuadro de abajo
+          (PDF, foto, Excel, CSV o TXT).{" "}
+          <strong>Cargar lista</strong> es el único botón que agrega alumnos al
+          padrón.
+        </p>
+
+        <Field label="1. Traer desde archivo (opcional)">
           <input
             ref={fileRef}
             type="file"
             accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.csv,.txt,image/*,application/pdf"
-            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal-800 hover:file:bg-teal-100"
+            className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-teal-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal-800 hover:file:bg-teal-200"
             disabled={scanning || loading}
             onChange={(e) => onFileSelected(e.target.files?.[0] ?? null)}
           />
@@ -193,73 +173,49 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
         ) : null}
 
         {preview.length > 0 ? (
-          <div className="space-y-3 rounded-xl border border-teal-100 bg-teal-50/50 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-medium text-slate-800">
-                Vista previa · {preview.length} alumnos
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={loading}
-                  onClick={() => {
-                    setPreview([]);
-                    setBulk("");
-                    if (fileRef.current) fileRef.current.value = "";
-                  }}
-                >
-                  Descartar
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={loading}
-                  onClick={confirmPreview}
-                >
-                  Confirmar carga
-                </Button>
-              </div>
-            </div>
-            <div className="max-h-48 overflow-auto rounded-lg border border-slate-200 bg-white">
-              <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-2 py-1.5">Nombre</th>
-                    <th className="px-2 py-1.5">DNI</th>
-                    <th className="px-2 py-1.5">Matrícula</th>
+          <div className="max-h-40 overflow-auto rounded-xl border border-teal-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 bg-teal-50 text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="px-2 py-1.5">Vista previa</th>
+                  <th className="px-2 py-1.5">DNI</th>
+                  <th className="px-2 py-1.5">Matrícula</th>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map((s) => (
+                  <tr key={s.studentDni} className="border-t border-slate-100">
+                    <td className="px-2 py-1.5">{s.studentName}</td>
+                    <td className="px-2 py-1.5 font-mono text-xs">
+                      {s.studentDni}
+                    </td>
+                    <td className="px-2 py-1.5 font-mono text-xs">
+                      {s.matricula || "—"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {preview.map((s) => (
-                    <tr key={s.studentDni} className="border-t border-slate-100">
-                      <td className="px-2 py-1.5">{s.studentName}</td>
-                      <td className="px-2 py-1.5 font-mono text-xs">
-                        {s.studentDni}
-                      </td>
-                      <td className="px-2 py-1.5 font-mono text-xs">
-                        {s.matricula || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : null}
 
         <form className="space-y-3" onSubmit={addBulk}>
-          <Field label="O pegá / editá la lista" hint="Una línea: Nombre;DNI;Matrícula">
+          <Field
+            label="2. Revisá, pegá o editá la lista"
+            hint="Una línea por alumno: Nombre;DNI;Matrícula"
+          >
             <TextArea
               rows={5}
               value={bulk}
-              onChange={(e) => setBulk(e.target.value)}
+              onChange={(e) => {
+                setBulk(e.target.value);
+                setPreview([]);
+              }}
               placeholder={"Gómez, Luis;30111222;1013\nRuiz, María;33444555;1060"}
             />
           </Field>
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-            Cargar lista
+          <Button type="submit" disabled={loading || scanning} className="w-full">
+            {loading ? "Cargando…" : "Cargar lista al padrón"}
           </Button>
         </form>
       </div>
