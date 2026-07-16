@@ -1,19 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
-import { Badge, Button, Card } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { getTeacherIdFromSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  classTypeLabel,
-  formatDate,
-  formatTime,
-  statusLabel,
-} from "@/lib/utils";
-import { classTypeBadgeTone } from "@/lib/class-types";
 import { AddStudentsForm } from "./add-students-form";
 import { CalendarForm } from "./calendar-form";
-import { SessionActions } from "./session-actions";
+import { SessionsList } from "./sessions-list";
 import { RosterTable } from "./roster-table";
 
 type Props = { params: Promise<{ id: string }> };
@@ -72,49 +65,18 @@ export default async function CoursePage({ params }: Props) {
               Todavía no hay clases. Generá el calendario o agregá una sesión.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
-              {course.sessions.map((session) => (
-                <li
-                  key={session.id}
-                  className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-900">
-                        {formatDate(session.startsAt)}
-                      </span>
-                      <Badge tone={classTypeBadgeTone(session.classType)}>
-                        {classTypeLabel(session.classType)}
-                      </Badge>
-                      <Badge
-                        tone={
-                          session.status === "open"
-                            ? "success"
-                            : session.status === "closed"
-                              ? "neutral"
-                              : "warn"
-                        }
-                      >
-                        {statusLabel(session.status)}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-slate-500">
-                      {formatTime(session.startsAt)} –{" "}
-                      {formatTime(session.endsAt)}
-                      {session.label ? ` · ${session.label}` : ""}
-                      {" · "}
-                      {session._count.attendances} presentes
-                    </p>
-                  </div>
-                  <SessionActions
-                    sessionId={session.id}
-                    status={session.status}
-                    classType={session.classType}
-                    label={session.label}
-                  />
-                </li>
-              ))}
-            </ul>
+            <SessionsList
+              courseId={course.id}
+              sessions={course.sessions.map((session) => ({
+                id: session.id,
+                classType: session.classType,
+                status: session.status,
+                label: session.label,
+                startsAt: session.startsAt.toISOString(),
+                endsAt: session.endsAt.toISOString(),
+                attendanceCount: session._count.attendances,
+              }))}
+            />
           )}
         </Card>
 

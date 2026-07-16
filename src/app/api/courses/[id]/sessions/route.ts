@@ -202,3 +202,39 @@ export async function POST(request: Request, { params }: Params) {
 
   return NextResponse.json({ session });
 }
+
+export async function DELETE(request: Request, { params }: Params) {
+  const teacherId = await getTeacherIdFromSession();
+  if (!teacherId) {
+    return NextResponse.json({ error: "No autenticado." }, { status: 401 });
+  }
+
+  const { id: courseId } = await params;
+  const course = await prisma.course.findFirst({
+    where: { id: courseId, teacherId },
+  });
+  if (!course) {
+    return NextResponse.json({ error: "Curso no encontrado." }, { status: 404 });
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const sessionIds = Array.isArray(body.sessionIds)
+    ? body.sessionIds.map((id: unknown) => String(id)).filter(Boolean)
+    : [];
+
+  if (sessionIds.length === 0) {
+    return NextResponse.json(
+      { error: "No hay clases seleccionadas." },
+      { status: 400 },
+    );
+  }
+
+  const result = await prisma.classSession.deleteMany({
+    where: {
+      id: { in: sessionIds },
+      courseId,
+    },
+  });
+
+  return NextResponse.json({ deleted: result.count });
+}
