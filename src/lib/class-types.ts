@@ -32,6 +32,14 @@ export function classTypeAllowsTopic(type: string): boolean {
   return type === "theoretical" || type === "practical";
 }
 
+/** Materiales PDF/Word solo en teórica y práctica. */
+export function classTypeAllowsDocuments(type: string): boolean {
+  return type === "theoretical" || type === "practical";
+}
+
+export const MAX_SESSION_DOCUMENTS = 10;
+export const MAX_SESSION_DOCUMENT_BYTES = 4 * 1024 * 1024; // 4 MB
+
 export function classTypeLimit(type: string): number | null {
   return LIMITS[type] ?? null;
 }

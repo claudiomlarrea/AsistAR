@@ -22,7 +22,9 @@ export default async function CoursePage({ params }: Props) {
       students: { orderBy: { studentName: "asc" } },
       sessions: {
         orderBy: { startsAt: "asc" },
-        include: { _count: { select: { attendances: true } } },
+        include: {
+          _count: { select: { attendances: true, documents: true } },
+        },
       },
     },
   });
@@ -75,6 +77,7 @@ export default async function CoursePage({ params }: Props) {
                 startsAt: session.startsAt.toISOString(),
                 endsAt: session.endsAt.toISOString(),
                 attendanceCount: session._count.attendances,
+                documentCount: session._count.documents,
               }))}
             />
           )}

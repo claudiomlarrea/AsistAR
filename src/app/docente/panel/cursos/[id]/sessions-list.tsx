@@ -20,6 +20,7 @@ export type SessionItem = {
   startsAt: string;
   endsAt: string;
   attendanceCount: number;
+  documentCount: number;
 };
 
 export function SessionsList({
@@ -182,6 +183,7 @@ export function SessionsList({
                 status={session.status}
                 classType={session.classType}
                 label={session.label}
+                documentCount={session.documentCount}
               />
             </li>
           );

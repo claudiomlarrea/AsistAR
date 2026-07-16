@@ -54,7 +54,21 @@ model ClassSession {
   openedAt    DateTime?
   closedAt    DateTime?
   attendances AttendanceRecord[]
+  documents   SessionDocument[]
   createdAt   DateTime           @default(now())
+}
+
+model SessionDocument {
+  id        String       @id @default(cuid())
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fileName  String
+  mimeType  String
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime     @default(now())
+
+  @@index([sessionId])
 }
 
 model AttendanceRecord {

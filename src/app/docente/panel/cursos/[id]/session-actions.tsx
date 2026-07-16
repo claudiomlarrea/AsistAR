@@ -4,18 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, Select } from "@/components/ui";
-import { CLASS_TYPES, classTypeAllowsTopic } from "@/lib/class-types";
+import { CLASS_TYPES, classTypeAllowsDocuments, classTypeAllowsTopic } from "@/lib/class-types";
+import { SessionDocuments } from "./session-documents";
 
 export function SessionActions({
   sessionId,
   status,
   classType,
   label,
+  documentCount = 0,
 }: {
   sessionId: string;
   status: string;
   classType: string;
   label: string | null;
+  documentCount?: number;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -27,6 +30,7 @@ export function SessionActions({
   }, [label]);
 
   const showTopic = classTypeAllowsTopic(classType);
+  const showDocs = classTypeAllowsDocuments(classType);
 
   async function act(action: string, extra: Record<string, unknown> = {}) {
     setLoading(true);
@@ -148,6 +152,10 @@ export function SessionActions({
 
       {typeError ? (
         <p className="text-xs text-red-600">{typeError}</p>
+      ) : null}
+
+      {showDocs ? (
+        <SessionDocuments sessionId={sessionId} initialCount={documentCount} />
       ) : null}
     </div>
   );
