@@ -21,7 +21,7 @@ export default function AlumnoManualPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-teal-50">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100">
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-10">
         <Card title="Soy alumno">

@@ -100,7 +100,7 @@ export function SessionsList({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2">
         <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"

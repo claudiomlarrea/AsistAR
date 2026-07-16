@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
+  /* Paleta alineada con EvaluAR */
+  --background: #eef7f3;
   --foreground: #0f172a;
+  --brand: #044a30;
+  --brand-hover: #033826;
+  --brand-soft: #d5eae3;
+  --brand-muted: #c6e0d7;
 }
 
 @theme inline {
@@ -10,6 +15,19 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Remapeo de teal → verdes EvaluAR (botones, logo, acentos) */
+  --color-teal-50: #eef7f3;
+  --color-teal-100: #d5eae3;
+  --color-teal-200: #b8ddd0;
+  --color-teal-300: #8fc8b4;
+  --color-teal-400: #5aa88c;
+  --color-teal-500: #2d8660;
+  --color-teal-600: #044a30;
+  --color-teal-700: #033826;
+  --color-teal-800: #022c1c;
+  --color-teal-900: #011f14;
+  --color-teal-950: #01140d;
 }
 
 body {

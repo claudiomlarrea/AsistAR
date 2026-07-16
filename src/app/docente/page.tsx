@@ -46,7 +46,7 @@ export default function DocenteAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-teal-50">
       <SiteHeader />
       <main className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-12">
         <Card title={mode === "login" ? "Acceso docente" : "Registro docente"}>
