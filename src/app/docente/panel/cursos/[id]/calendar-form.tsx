@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
+import { Alert, Button, Card, Field, Input, Select, TimeInput } from "@/components/ui";
 import { CLASS_TYPES, classTypeAllowsTopic } from "@/lib/class-types";
 
 const WEEKDAYS = [
@@ -192,16 +192,14 @@ export function CalendarForm({ courseId }: { courseId: string }) {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Inicio">
-                <Input
-                  type="time"
+                <TimeInput
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
               </Field>
               <Field label="Fin">
-                <Input
-                  type="time"
+                <TimeInput
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   required
@@ -252,16 +250,14 @@ export function CalendarForm({ courseId }: { courseId: string }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Inicio">
-                <Input
-                  type="time"
+                <TimeInput
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
                 />
               </Field>
               <Field label="Fin">
-                <Input
-                  type="time"
+                <TimeInput
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   required

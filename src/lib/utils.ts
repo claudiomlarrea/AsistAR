@@ -22,6 +22,7 @@ export function formatDateTime(value: Date | string): string {
   return d.toLocaleString("es-AR", {
     dateStyle: "short",
     timeStyle: "short",
+    hour12: false,
   });
 }
 
@@ -39,6 +40,7 @@ export function formatTime(value: Date | string): string {
   return d.toLocaleTimeString("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 }
 

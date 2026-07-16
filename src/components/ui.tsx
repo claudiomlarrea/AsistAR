@@ -57,6 +57,22 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+export function TimeInput(
+  props: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">,
+) {
+  return (
+    <Input
+      {...props}
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      placeholder={props.placeholder ?? "16:00"}
+      pattern="^([01]?\d|2[0-3]):[0-5]\d$"
+      title="Horario en formato 24 h (ej. 16:00)"
+    />
+  );
+}
+
 export function TextArea(
   props: React.TextareaHTMLAttributes<HTMLTextAreaElement>,
 ) {
