@@ -4,7 +4,7 @@ import { Button, Card } from "@/components/ui";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100">
+    <div className="min-h-screen bg-gradient-to-b from-teal-100 to-teal-200">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10 sm:py-16">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">

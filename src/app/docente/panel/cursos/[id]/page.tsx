@@ -30,7 +30,7 @@ export default async function CoursePage({ params }: Props) {
   if (!course) notFound();
 
   return (
-    <div className="min-h-screen bg-teal-50">
+    <div className="min-h-screen bg-teal-100">
       <SiteHeader />
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         <div className="space-y-2">

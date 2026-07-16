@@ -97,7 +97,7 @@ export default function ScanAttendancePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-teal-100">
+    <div className="min-h-screen bg-gradient-to-b from-teal-100 to-teal-200">
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-8">
         {loadError ? (

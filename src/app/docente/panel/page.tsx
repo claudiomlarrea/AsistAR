@@ -27,7 +27,7 @@ export default async function PanelPage() {
   });
 
   return (
-    <div className="min-h-screen bg-teal-50">
+    <div className="min-h-screen bg-teal-100">
       <SiteHeader />
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
