@@ -51,9 +51,13 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
 
   async function addBulk(e: FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
     setMsg("");
+    if (!bulk.trim()) {
+      setError("Pegá al menos un alumno en la lista (Nombre;DNI;Matrícula).");
+      return;
+    }
+    setLoading(true);
     try {
       const res = await fetch(`/api/courses/${courseId}/students`, {
         method: "POST",
@@ -254,7 +258,7 @@ export function AddStudentsForm({ courseId }: { courseId: string }) {
               placeholder={"Gómez, Luis;30111222;1013\nRuiz, María;33444555;1060"}
             />
           </Field>
-          <Button type="submit" disabled={loading || !bulk.trim()}>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
             Cargar lista
           </Button>
         </form>
